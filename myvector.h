@@ -14,18 +14,18 @@ public:
     MyVector(MyVector&& vec);
 
     void reserve(size_t capacity);
+    void resize(size_t newSize);
 
     size_t size() const;
     size_t capacity() const;
-
-    T& operator[](size_t index);
 
     void push_back(const T& element);
     void push_back(T&& element);
 
     T& pop_back();
 
-    void resize(size_t newSize);
+    T& operator[](size_t index);
+    T& operator=(const MyVector& vector);
 
     virtual ~MyVector();
 };
@@ -72,11 +72,19 @@ void MyVector<T>::reserve(size_t capacity) {
     m_data = newData;
 }
 
-//перегрузка оператора []:
+//изменение размера MyVector:
 template<class T>
-T& MyVector<T>::operator[](size_t index) {
-    assert(index < m_size);
-    return m_data[index];
+void MyVector<T>::resize(size_t newSize) {
+    if (newSize > m_size) {
+        if (newSize > m_capacity)
+            reserve(newSize);
+        for (int i = m_size; i < newSize; ++i)
+            m_data[i] = T();
+    }
+    else
+        for (int i = newSize; i < m_size; ++i)
+            m_data[i].~T();
+    m_size = newSize;
 }
 
 template<class T>
@@ -109,20 +117,20 @@ T& MyVector<T>::pop_back() {
     return m_data[m_size];
 }
 
-
-//resize:
+//перегрузка оператора []:
 template<class T>
-void MyVector<T>::resize(size_t newSize) {
-    if (newSize > m_size) {
-        if (newSize > m_capacity)
-            reserve(newSize);
-        for (int i = m_size; i < newSize; ++i)
-            m_data[i] = T();
-    }
-    else
-        for (int i = newSize; i < m_size; ++i)
-            m_data[i].~T();
-    m_size = newSize;
+T& MyVector<T>::operator[](size_t index) {
+    assert(index < m_size);
+    return m_data[index];
+}
+template<class T>
+T& MyVector<T>::operator=(const MyVector& vector) {
+    m_capacity = vector.m_capacity;
+    m_size = vector.m_size;
+    delete[] m_data;
+    m_data = new T[m_capacity];
+    for (int i = 0; i < m_size; ++i)
+        m_data[i] = vector.m_data[i];
 }
 
 //деструктор:
