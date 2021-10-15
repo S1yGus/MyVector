@@ -30,6 +30,8 @@ public:
     void insert(size_t index, const T& element);
     void erase(size_t index);
 
+    void clear();
+
     bool empty();
     T& front();
     T& back();
@@ -59,7 +61,7 @@ MyVector<T>::MyVector(const MyVector& vec) {
     m_capacity = vec.m_capacity;
     m_size = vec.m_size;
     m_data = new T[m_size];
-    for (int i = 0; i < m_size; ++i)
+    for (unsigned int i = 0; i < m_size; ++i)
         m_data[i] = vec.m_data[i];
 }
 
@@ -90,7 +92,7 @@ void MyVector<T>::reserve(size_t newCapacity) {
     assert(newCapacity >= m_size);
     m_capacity = newCapacity;
     T* newData = new T[m_capacity];
-    for (int i = 0; i < m_size; ++i)
+    for (unsigned int i = 0; i < m_size; ++i)
         newData[i] = m_data[i];
     delete[] m_data;
     m_data = newData;
@@ -99,23 +101,29 @@ void MyVector<T>::reserve(size_t newCapacity) {
 //изменение размера MyVector:
 template<class T>
 void MyVector<T>::resize(size_t newSize) {
-    if (newSize > m_size) {
+    if (newSize == m_size)
+        return;
+    else if (newSize > m_size) {
         if (newSize > m_capacity)
             reserve(newSize);
-        for (int i = m_size; i < newSize; ++i)
+        for (unsigned int i = m_size; i < newSize; ++i)
             m_data[i] = T();
     }
-    else
-        for (int i = newSize; i < m_size; ++i)
-            m_data[i].~T();
+    else {
+        T* newData = new T[m_capacity];
+        for (unsigned int i = 0; i < newSize; ++i)
+            newData[i] = m_data[i];
+        delete[] m_data;
+        m_data = newData;
+    }
     m_size = newSize;
 }
 
-//получить размер:
+//получение размера:
 template<class T>
 size_t MyVector<T>::size() const { return m_size; }
 
-//получить емкость:
+//получение емкости:
 template<class T>
 size_t MyVector<T>::capacity() const { return m_capacity; }
 
@@ -137,14 +145,14 @@ void MyVector<T>::push_back(T&& element) {
     m_data[m_size - 1] = std::move(element);
 }
 
-//pop_back:
+//pop_back ! реализация под вопросом, если возвращать элемент и не очищать память, то возможна утечка памяти !:
 template<class T>
 T& MyVector<T>::pop_back() {
     --m_size;
     return m_data[m_size];
 }
 
-//вставить элмент:
+//вставка элмента:
 template<class T>
 void MyVector<T>::insert(size_t index, const T& element) {
     assert(index < m_size);
@@ -152,41 +160,60 @@ void MyVector<T>::insert(size_t index, const T& element) {
     if (m_capacity < m_size)
         reserve(m_size);
     T* newData = new T[m_size];
-    for (int i = 0; i < index; ++i) {
+    for (unsigned int i = 0; i < index; ++i) {
         newData[i] = m_data[i];
     }
     newData[index] = element;
-    for (int i = index + 1; i < m_size; ++i) {
+    for (unsigned int i = index + 1; i < m_size; ++i) {
         newData[i] = m_data[i - 1];
     }
     delete[] m_data;
     m_data = newData;
 }
 
-//удалить эдемент:
+//удаление эдемента:
 template<class T>
 void MyVector<T>::erase(size_t index) {
     assert(index < m_size);
+    T* newData = new T[m_capacity];
+    for (unsigned int i = 0; i < index; ++i)
+        newData[i] = m_data[i];
+    for (unsigned int i = index + 1; i < m_size; ++i)
+        newData[i - 1] = m_data[i];
+    delete[] m_data;
+    m_data = newData;
     --m_size;
-    for (int i = index; i < m_size; ++i)
-        m_data[i] = std::move(m_data[i + 1]);
 }
 
-//получить первый элемент MyVector:
+//очистка MyVector:
+template<class T>
+void MyVector<T>::clear(){
+    size = 0;
+    delete m_data;
+    m_data = new T[m_capacity];
+}
+
+//проверка на наличие элементов в MyVector:
+template<class T>
+bool MyVector<T>::empty() {
+    return m_size == 0;
+}
+
+//получение первого элемента MyVector:
 template<class T>
 T& MyVector<T>::front() {
     assert(m_size > 0);
     return m_data[0];
 }
 
-//получить посследний элемент MyVector:
+//получение посследнего элемента MyVector:
 template<class T>
 T& MyVector<T>::back() {
     assert(m_size > 0);
     return m_data[m_size - 1];
 }
 
-//получить произвольный элемент MyVector с проверкой на корректность:
+//получение произвольного элемента MyVector с проверкой на корректность:
 template<class T>
 T& MyVector<T>::at(size_t index) {
     if (index >= m_size)
@@ -210,7 +237,7 @@ MyVector<T>& MyVector<T>::operator=(const MyVector& vec) {
     m_capacity = vec.m_capacity;
     m_size = vec.m_size;
     m_data = new T[m_capacity];
-    for (int i = 0; i < m_size; ++i)
+    for (unsigned int i = 0; i < m_size; ++i)
         m_data[i] = vec.m_data[i];
 
     return *this;
