@@ -25,7 +25,7 @@ public:
     void push_back(const T& element);
     void push_back(T&& element);
 
-    T& pop_back();
+    void pop_back();
 
     void insert(size_t index, const T& element);
     void erase(size_t index);
@@ -52,7 +52,9 @@ MyVector<T>::MyVector(size_t size) {
     m_size = size;
     if (size == 0)
         m_data = nullptr;
-    m_data = new T[m_capacity];
+    m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
+    for (unsigned int i = 0; i < m_size; ++i)
+        new(m_data + i) T();
 }
 
 //конструктор копирования:
@@ -60,9 +62,9 @@ template<class T>
 MyVector<T>::MyVector(const MyVector& vec) {
     m_capacity = vec.m_capacity;
     m_size = vec.m_size;
-    m_data = new T[m_size];
+    m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
     for (unsigned int i = 0; i < m_size; ++i)
-        m_data[i] = vec.m_data[i];
+        new(m_data + i) T(vec[i]);
 }
 
 //конструктор перемещения:
@@ -78,10 +80,13 @@ MyVector<T>::MyVector(MyVector&& vec) {
 
 //конструктор листа иницализации:
 template<class T>
-MyVector<T>::MyVector(const std::initializer_list<T>& list) : MyVector(list.size()) {
+MyVector<T>::MyVector(const std::initializer_list<T>& list) {
+    m_capacity = list.size();
+    m_size = list.size();
+    m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
     int count{ 0 };
-    for (const auto& element : list) {
-        m_data[count] = element;
+    for (auto& element : list) {
+        new(m_data + count) T(element);
         ++count;
     }
 }
@@ -91,10 +96,12 @@ template<class T>
 void MyVector<T>::reserve(size_t newCapacity) {
     assert(newCapacity >= m_size);
     m_capacity = newCapacity;
-    T* newData = new T[m_capacity];
+    T* newData = (T*)new unsigned char(sizeof(T) * m_capacity);
     for (unsigned int i = 0; i < m_size; ++i)
-        newData[i] = m_data[i];
-    delete[] m_data;
+        new(newData + i) T(std::move(m_data[i]));
+    for (unsigned int i = 0; i < m_size; ++i)
+        (m_data + i)->~T();
+    delete[] (unsigned char*)m_data;
     m_data = newData;
 }
 
@@ -107,14 +114,11 @@ void MyVector<T>::resize(size_t newSize) {
         if (newSize > m_capacity)
             reserve(newSize);
         for (unsigned int i = m_size; i < newSize; ++i)
-            m_data[i] = T();
+            new(m_data + i) T();
     }
     else {
-        T* newData = new T[m_capacity];
-        for (unsigned int i = 0; i < newSize; ++i)
-            newData[i] = m_data[i];
-        delete[] m_data;
-        m_data = newData;
+        for (unsigned int i = newSize; i < m_size; ++i)
+            (m_data + i)->~T();
     }
     m_size = newSize;
 }
@@ -130,67 +134,60 @@ size_t MyVector<T>::capacity() const { return m_capacity; }
 //push_back семантика копирования:
 template<class T>
 void MyVector<T>::push_back(const T& element) {
+    if (m_capacity < m_size + 1)
+        reserve(m_size + 1);
+    new(m_data + m_size) T(element);
     ++m_size;
-    if (m_capacity < m_size)
-        reserve(m_size);
-    m_data[m_size - 1] = element;
 }
 
 //push_back семантика перемещения:
 template<class T>
 void MyVector<T>::push_back(T&& element) {
+    if (m_capacity < m_size + 1)
+        reserve(m_size + 1);
+    new(m_data + m_size) T(std::move(element));
     ++m_size;
-    if (m_capacity < m_size)
-        reserve(m_size);
-    m_data[m_size - 1] = std::move(element);
 }
 
-//pop_back ! реализация под вопросом, если возвращать элемент и не очищать память, то возможна утечка памяти !:
+//pop_back:
 template<class T>
-T& MyVector<T>::pop_back() {
+void MyVector<T>::pop_back() {
     --m_size;
-    return m_data[m_size];
+    (m_data + m_size)->~T();
 }
 
 //вставка элмента:
 template<class T>
 void MyVector<T>::insert(size_t index, const T& element) {
     assert(index < m_size);
+    if (m_capacity < m_size + 1)
+        reserve(m_size + 1);
+    for (unsigned int i = m_size; i > index; --i) {
+        new(m_data + i) T(std::move(m_data[i - 1]));
+        (m_data + i - 1)->~T();
+    }
+    new(m_data + index) T(element);
     ++m_size;
-    if (m_capacity < m_size)
-        reserve(m_size);
-    T* newData = new T[m_size];
-    for (unsigned int i = 0; i < index; ++i) {
-        newData[i] = m_data[i];
-    }
-    newData[index] = element;
-    for (unsigned int i = index + 1; i < m_size; ++i) {
-        newData[i] = m_data[i - 1];
-    }
-    delete[] m_data;
-    m_data = newData;
 }
 
 //удаление эдемента:
 template<class T>
 void MyVector<T>::erase(size_t index) {
     assert(index < m_size);
-    T* newData = new T[m_capacity];
-    for (unsigned int i = 0; i < index; ++i)
-        newData[i] = m_data[i];
-    for (unsigned int i = index + 1; i < m_size; ++i)
-        newData[i - 1] = m_data[i];
-    delete[] m_data;
-    m_data = newData;
+    (m_data + index)->~T();
     --m_size;
+    for (unsigned int i = index; i < m_size; ++i) {
+        new(m_data + i) T(std::move(i + 1));
+        (m_data + i + 1)->~T();
+    }
 }
 
 //очистка MyVector:
 template<class T>
 void MyVector<T>::clear(){
-    size = 0;
-    delete m_data;
-    m_data = new T[m_capacity];
+    for (unsigned int i = 0; i < m_size; ++i)
+        (m_data + i)->~T();
+    m_size = 0;
 }
 
 //проверка на наличие элементов в MyVector:
@@ -202,14 +199,12 @@ bool MyVector<T>::empty() {
 //получение первого элемента MyVector:
 template<class T>
 T& MyVector<T>::front() {
-    assert(m_size > 0);
     return m_data[0];
 }
 
 //получение посследнего элемента MyVector:
 template<class T>
 T& MyVector<T>::back() {
-    assert(m_size > 0);
     return m_data[m_size - 1];
 }
 
@@ -233,12 +228,16 @@ MyVector<T>& MyVector<T>::operator=(const MyVector& vec) {
     if (this == &vec)
         return *this;
 
-    delete[] m_data;
+    for (unsigned int i = 0; i < m_size; ++i)
+        (m_data + i)->~T();
+    delete[] (unsigned char*)m_data;
+
     m_capacity = vec.m_capacity;
     m_size = vec.m_size;
-    m_data = new T[m_capacity];
+    
+    m_data = (T*)new unsigned char(sizeof(T) * m_capacity);
     for (unsigned int i = 0; i < m_size; ++i)
-        m_data[i] = vec.m_data[i];
+        new(m_data + i) T(vec[i]);
 
     return *this;
 }
@@ -249,7 +248,10 @@ MyVector<T>& MyVector<T>::operator=(MyVector&& vec) {
     if (this == &vec)
         return *this;
 
-    delete[] m_data;
+    for (unsigned int i = 0; i < m_size; ++i)
+        (m_data + i)->~T();
+    delete[] (unsigned char*)m_data;
+
     m_capacity = vec.m_capacity;
     vec.m_capacity = 0;
     m_size = vec.m_size;
@@ -263,14 +265,20 @@ MyVector<T>& MyVector<T>::operator=(MyVector&& vec) {
 //перегрузка оператора присванивания через лист инициализации:
 template<class T>
 MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T>& list) {
-    m_capacity = list.size();
+    if (m_capacity < list.size())
+        m_capacity = list.size();
     m_size = list.size();
-    delete[] m_data;
-    m_data = new T[m_capacity];
+
+    for (unsigned int i = 0; i < m_size; ++i) {
+        (m_size + i)->~T();
+    }
+    delete[] (unsigned char*)m_data;
+
+    m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
 
     int count{ 0 };
     for (const auto& element : list) {
-        m_data[count] = element;
+        new(m_data + count) T(element);
         ++count;
     }
 
@@ -280,5 +288,7 @@ MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T>& list) {
 //деструктор:
 template<class T>
 MyVector<T>::~MyVector(){
-    delete[] m_data;
+    for (unsigned int i = 0; i < m_size; ++i)
+        (m_data + i)->~T();
+    delete[] (unsigned char*)m_data;
 }
