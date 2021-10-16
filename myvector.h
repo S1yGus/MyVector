@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MYVECTOR_H
+#define MYVECTOR_H
 
 #include <cassert>
 #include <initializer_list>
@@ -97,7 +98,7 @@ template<class T>
 void MyVector<T>::reserve(size_t newCapacity) {
     assert(newCapacity >= m_size);
     m_capacity = newCapacity;
-    T* newData = (T*)new unsigned char(sizeof(T) * m_capacity);
+    T* newData = (T*)new unsigned char[sizeof(T) * m_capacity];
     for (unsigned int i = 0; i < m_size; ++i)
         new(newData + i) T(std::move(m_data[i]));
     for (unsigned int i = 0; i < m_size; ++i)
@@ -223,6 +224,7 @@ T& MyVector<T>::operator[](size_t index) {
     return m_data[index];
 }
 
+//перегрузка оператора [] const версия:
 template<class T>
 T MyVector<T>::operator[](size_t index) const {
     return m_data[index];
@@ -298,3 +300,5 @@ MyVector<T>::~MyVector(){
         (m_data + i)->~T();
     delete[] (unsigned char*)m_data;
 }
+
+#endif
