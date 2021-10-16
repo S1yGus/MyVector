@@ -37,6 +37,7 @@ public:
     T& back();
     T& at(size_t index);
     T& operator[](size_t index);
+    T operator[](size_t index) const;
 
     MyVector& operator=(const MyVector& vector);
     MyVector& operator=(MyVector&& vector);
@@ -219,6 +220,11 @@ T& MyVector<T>::at(size_t index) {
 //перегрузка оператора []:
 template<class T>
 T& MyVector<T>::operator[](size_t index) {
+    return m_data[index];
+}
+
+template<class T>
+T MyVector<T>::operator[](size_t index) const {
     return m_data[index];
 }
 
