@@ -1,6 +1,7 @@
 #ifndef MYVECTOR_H
 #define MYVECTOR_H
 
+#include <utility>
 #include <cassert>
 #include <initializer_list>
 #include <exception>
@@ -55,7 +56,7 @@ MyVector<T>::MyVector(size_t size) {
     if (size == 0)
         m_data = nullptr;
     m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         new(m_data + i) T();
 }
 
@@ -65,7 +66,7 @@ MyVector<T>::MyVector(const MyVector& vec) {
     m_capacity = vec.m_capacity;
     m_size = vec.m_size;
     m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         new(m_data + i) T(vec[i]);
 }
 
@@ -86,8 +87,8 @@ MyVector<T>::MyVector(const std::initializer_list<T>& list) {
     m_capacity = list.size();
     m_size = list.size();
     m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
-    int count{ 0 };
-    for (auto& element : list) {
+    uint32_t count{ 0 };
+    for (const auto& element : list) {
         new(m_data + count) T(element);
         ++count;
     }
@@ -99,9 +100,9 @@ void MyVector<T>::reserve(size_t newCapacity) {
     assert(newCapacity >= m_size);
     m_capacity = newCapacity;
     T* newData = (T*)new unsigned char[sizeof(T) * m_capacity];
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         new(newData + i) T(std::move(m_data[i]));
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         (m_data + i)->~T();
     delete[] (unsigned char*)m_data;
     m_data = newData;
@@ -115,11 +116,11 @@ void MyVector<T>::resize(size_t newSize) {
     else if (newSize > m_size) {
         if (newSize > m_capacity)
             reserve(newSize);
-        for (unsigned int i = m_size; i < newSize; ++i)
+        for (uint32_t i = m_size; i < newSize; ++i)
             new(m_data + i) T();
     }
     else {
-        for (unsigned int i = newSize; i < m_size; ++i)
+        for (uint32_t i = newSize; i < m_size; ++i)
             (m_data + i)->~T();
     }
     m_size = newSize;
@@ -164,7 +165,7 @@ void MyVector<T>::insert(size_t index, const T& element) {
     assert(index < m_size);
     if (m_capacity < m_size + 1)
         reserve(m_size + 1);
-    for (unsigned int i = m_size; i > index; --i) {
+    for (uint32_t i = m_size; i > index; --i) {
         new(m_data + i) T(std::move(m_data[i - 1]));
         (m_data + i - 1)->~T();
     }
@@ -178,7 +179,7 @@ void MyVector<T>::erase(size_t index) {
     assert(index < m_size);
     (m_data + index)->~T();
     --m_size;
-    for (unsigned int i = index; i < m_size; ++i) {
+    for (uint32_t i = index; i < m_size; ++i) {
         new(m_data + i) T(std::move(i + 1));
         (m_data + i + 1)->~T();
     }
@@ -187,7 +188,7 @@ void MyVector<T>::erase(size_t index) {
 //очистка MyVector:
 template<class T>
 void MyVector<T>::clear(){
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         (m_data + i)->~T();
     m_size = 0;
 }
@@ -236,7 +237,7 @@ MyVector<T>& MyVector<T>::operator=(const MyVector& vec) {
     if (this == &vec)
         return *this;
 
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         (m_data + i)->~T();
     delete[] (unsigned char*)m_data;
 
@@ -244,7 +245,7 @@ MyVector<T>& MyVector<T>::operator=(const MyVector& vec) {
     m_size = vec.m_size;
     
     m_data = (T*)new unsigned char(sizeof(T) * m_capacity);
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         new(m_data + i) T(vec[i]);
 
     return *this;
@@ -277,14 +278,14 @@ MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T>& list) {
         m_capacity = list.size();
     m_size = list.size();
 
-    for (unsigned int i = 0; i < m_size; ++i) {
+    for (uint32_t i = 0; i < m_size; ++i) {
         (m_size + i)->~T();
     }
     delete[] (unsigned char*)m_data;
 
     m_data = (T*)new unsigned char[sizeof(T) * m_capacity];
 
-    int count{ 0 };
+    uint32_t count{ 0 };
     for (const auto& element : list) {
         new(m_data + count) T(element);
         ++count;
@@ -296,7 +297,7 @@ MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T>& list) {
 //деструктор:
 template<class T>
 MyVector<T>::~MyVector(){
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         (m_data + i)->~T();
     delete[] (unsigned char*)m_data;
 }
