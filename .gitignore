@@ -1,9 +1,1 @@
-/GTest/Debug/
-/GTest/GTest.vcxproj
-/GTest/GTest.vcxproj.user
-/GTest/packages.config
-/Debug
-main.cpp
-MyVector.vcxproj
-MyVector.vcxproj.filters
-MyVector.vcxproj.user
+build/

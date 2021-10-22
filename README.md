@@ -1,2 +1,2 @@
-# class MyVector
+# Class MyVector
 Educational project.

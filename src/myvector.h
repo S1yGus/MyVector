@@ -257,7 +257,7 @@ MyVector<T>& MyVector<T>::operator=(MyVector&& vec) {
     if (this == &vec)
         return *this;
 
-    for (unsigned int i = 0; i < m_size; ++i)
+    for (uint32_t i = 0; i < m_size; ++i)
         (m_data + i)->~T();
     delete[] (unsigned char*)m_data;
 
@@ -279,7 +279,7 @@ MyVector<T>& MyVector<T>::operator=(const std::initializer_list<T>& list) {
     m_size = list.size();
 
     for (uint32_t i = 0; i < m_size; ++i) {
-        (m_size + i)->~T();
+        (m_data + i)->~T();
     }
     delete[] (unsigned char*)m_data;
 

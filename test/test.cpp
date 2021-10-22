@@ -1,5 +1,5 @@
-#include "pch.h"
-#include "../myvector.h"
+#include "gtest/gtest.h"
+#include "../src/myvector.h"
 
 struct VectorFixture : public testing::Test
 {
