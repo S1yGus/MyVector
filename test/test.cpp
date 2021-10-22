@@ -15,6 +15,10 @@ struct VectorFixture : public testing::Test
 	void TearDown() override {
 
 	}
+
+	~VectorFixture() {
+		delete vector;
+	}
 };
 
 TEST_F(VectorFixture, push_back) {
@@ -112,4 +116,13 @@ TEST_F(VectorFixture, back) {
 
 	//Assert
 	EXPECT_EQ(vector->back(), elementCounter - 1);
+}
+
+TEST_F(VectorFixture, at) {
+	//Arrange
+
+	//Act
+
+	//Assert
+	EXPECT_THROW(vector->at(elementCounter), std::exception);
 }
